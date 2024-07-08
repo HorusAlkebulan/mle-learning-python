@@ -166,3 +166,4 @@ pytorch_deep_learning/data
 pytorch_deep_learning/train
 pytorch_deep_learning/test
 pytorch_deep_learning/*.png
+*.pt

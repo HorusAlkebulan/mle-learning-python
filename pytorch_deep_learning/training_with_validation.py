@@ -189,3 +189,7 @@ if __name__ == "__main__":
             running_loss = 0.0
 
     logger.info(f"Training complete: {datetime.now()}")
+
+    model_save_path = f"{__file__}.pt"
+    logger.info(f"Saving model as {model_save_path}")
+    torch.save(model, model_save_path)
