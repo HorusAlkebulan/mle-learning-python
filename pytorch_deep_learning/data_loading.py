@@ -1,4 +1,5 @@
 # data_loading.py
+from datetime import datetime
 import torch
 from torchvision.datasets import CIFAR10
 from torchvision import transforms
@@ -6,6 +7,13 @@ from keras.datasets import cifar10
 from matplotlib import pyplot
 import logging
 from torch.utils.data import DataLoader
+import torch.nn as nn
+from torchvision import models
+
+# from torch import optim
+import torch.optim as optim
+import torch.nn.functional as F
+
 
 """
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -54,6 +62,29 @@ def initialize_logger():
     console_log_handler = logging.StreamHandler()
     console_log_handler.setFormatter(formatter)
     logger.addHandler(console_log_handler)
+
+
+class Net(nn.Module):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        # wire up model
+        self.num_classes = 10
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)
+        self.fc1 = nn.Linear(in_features=15 * 5 * 5, out_features=120)
+        self.fc2 = nn.Linear(in_features=120, out_features=84)
+        self.fc3 = nn.Linear(in_features=84, out_features=self.num_classes)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
 if __name__ == "__main__":
@@ -140,13 +171,8 @@ if __name__ == "__main__":
 
     batch_size = 16
     training_data_loader = DataLoader(
-        dataset=train_data,
-        batch_size=batch_size,
-        shuffle=True
+        dataset=train_data, batch_size=batch_size, shuffle=True
     )
     test_data_loader = DataLoader(
-        dataset=test_data,
-        batch_size=batch_size,
-        shuffle=False
+        dataset=test_data, batch_size=batch_size, shuffle=False
     )
-    
