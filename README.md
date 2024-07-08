@@ -9,9 +9,23 @@
 conda create -n pytorch-stable-pip python
 ```
 
-- Install the rest using pip
+- Activate enviroment
 
 ```bash
 conda activate pytorch-stable-pip
-pip install torch pytest torchtyping black numpy
+```
+
+- Install the rest using pip
+
+```bash
+pip install \
+black \
+keras \
+matplotlib \
+numpy \
+pytest \
+tensorflow \
+torch \
+torchtyping \
+torchvision
 ```
