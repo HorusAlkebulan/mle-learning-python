@@ -23,9 +23,14 @@ black \
 keras \
 matplotlib \
 numpy \
+pandas \
 pytest \
+seaborn \
 tensorflow \
+tf-keras \
 torch \
 torchtyping \
-torchvision
+torchvision \
+transformers \
+wordcloud
 ```
