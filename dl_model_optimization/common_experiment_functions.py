@@ -6,6 +6,10 @@ from tensorflow import keras
 from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+import sys
+
+# CUR_FILE_DIR = os.path.dirname(sys.argv[0])
+CUR_FILE_DIR = os.path.dirname(__file__)
 
 # convert flower names to numeric values
 def type_to_numeric(x: str) -> int:
@@ -17,8 +21,12 @@ def type_to_numeric(x: str) -> int:
         return 2
     
 # read data and process
-def get_data():
-    iris_data = pd.read_csv("iris.csv")
+def get_data() -> tuple[np.ndarray, np.ndarray]:
+
+    iris_path = os.path.join(CUR_FILE_DIR, "iris.csv")
+    print(f"Opening data file: {iris_path}")
+    iris_data = pd.read_csv(iris_path)
+
 
     print(f"dtypes: \n{iris_data.dtypes}")
     print(f"describe: \n{iris_data.describe()}")
@@ -44,5 +52,17 @@ def get_data():
     X_np = iris_np[:, 0:4]
     Y_np = iris_np[:, -1]
 
-    print(f"X_np: {str(X_np)[0:100]}")
-    print(f"Y_np: {str(Y_np)[0:100]}")
+    print(f"X_np: {X_np.shape} {type(X_np)}\n{X_np[0:5, :]}")
+    print(f"Y_np: {Y_np.shape} {type(Y_np)}\n{Y_np[0:5]}")
+
+    # create scaler fitting our feature data
+    scaler = StandardScaler().fit(X_np)
+
+    # apply the scaling on our data
+    X_np = scaler.transform(X_np)
+
+    # lets do one-hot-encoding for our output labels
+    Y_np = tf.keras.utils.to_categorical(Y_np, 3)
+
+    # return feature and label data
+    return X_np, Y_np
