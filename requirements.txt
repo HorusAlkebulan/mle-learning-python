@@ -1,0 +1,16 @@
+# pip install -r requirements.txt
+black
+keras
+matplotlib
+numpy
+pandas
+pytest
+seaborn
+scikit-learn
+tensorflow
+tf-keras
+torch
+torchtyping
+torchvision
+transformers
+wordcloud

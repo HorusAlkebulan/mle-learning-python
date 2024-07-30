@@ -18,19 +18,13 @@ conda activate pytorch-stable-pip
 - Install the rest using pip
 
 ```bash
-pip install \
-black \
-keras \
-matplotlib \
-numpy \
-pandas \
-pytest \
-seaborn \
-tensorflow \
-tf-keras \
-torch \
-torchtyping \
-torchvision \
-transformers \
-wordcloud
+pip install -r requirements.txt
+```
+
+## Running tests
+
+- Run all
+
+```bash
+pytest -v -s --disable-warnings
 ```
