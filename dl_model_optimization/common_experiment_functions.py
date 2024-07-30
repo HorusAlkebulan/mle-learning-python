@@ -66,3 +66,36 @@ def get_data() -> tuple[np.ndarray, np.ndarray]:
 
     # return feature and label data
     return X_np, Y_np
+
+def base_model_config():
+    model_config = {
+            "HIDDEN_NODES" : [32,64],
+            "HIDDEN_ACTIVATION" : "relu",
+            "OUTPUT_NODES" : 3,
+            "OUTPUT_ACTIVATION" : "softmax",
+            "WEIGHTS_INITIALIZER" : "random_normal",
+            "BIAS_INITIALIZER" : "zeros",
+            "NORMALIZATION" : "none",
+            "OPTIMIZER" : "rmsprop",
+            "LEARNING_RATE" : 0.001,
+            "REGULARIZER" : None,
+            "DROPOUT_RATE" : 0.0,
+            "EPOCHS" : 10,
+            "BATCH_SIZE" : 16,
+            "VALIDATION_SPLIT" : 0.2,
+            "VERBOSE" : 0,
+            "LOSS_FUNCTION" : "categorical_crossentropy",
+            "METRICS" : ["accuracy"]
+            }
+    return model_config
+
+
+
+if __name__ == "__main__":
+
+    accuracy_measures = {}
+
+    for batch_size in range(16, 128, 16):
+
+        # load config using defaults
+        model_config = base_model_config()
