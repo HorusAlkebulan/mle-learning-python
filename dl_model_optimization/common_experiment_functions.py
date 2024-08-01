@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import pandas as pd
 import os
 import numpy as np
@@ -6,7 +7,8 @@ from tensorflow import keras
 from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-import sys
+# import sys
+from tensorflow.keras.optimizers import Adagrad, RMSprop, Adam, SGD
 
 # CUR_FILE_DIR = os.path.dirname(sys.argv[0])
 CUR_FILE_DIR = os.path.dirname(__file__)
@@ -89,13 +91,138 @@ def base_model_config():
             }
     return model_config
 
+def get_optimizer(optimizer_name: str, learning_rate: float):
+    optimizer = None
 
+    if optimizer_name == 'adagrad':
+        optimizer = Adagrad(learning_rate=learning_rate)
+    elif optimizer_name == 'rmsprop':
+        optimizer = RMSprop(learning_rate=learning_rate)
+    elif optimizer_name == 'adam':
+        optimizer = Adam(learning_rate=learning_rate)
+    else:
+        optimizer = SGD(learning_rate=learning_rate)
+
+    return optimizer
+
+def create_and_run_model(model_config, X, Y, model_name):
+    
+    model = tf.keras.models.Sequential(name=model_name)
+
+    for layer in range(len(model_config["HIDDEN_NODES"])):
+
+        if (layer == 0):
+            model.add(
+                keras.layers.Dense(
+                    model_config["HIDDEN_NODES"][layer],
+                    input_shape=(X.shape[1],),
+                    name="Dense-Layer-" + str(layer),
+                    kernel_initializer=model_config["WEIGHTS_INITIALIZER"],
+                    bias_initializer=model_config["BIAS_INITIALIZER"],
+                    kernel_regularizer=model_config["REGULARIZER"],
+                    activation=model_config["HIDDEN_ACTIVATION"]),
+            )
+        else:
+            if (model_config["NORMALIZATION"] == "batch"):
+                model.add(keras.layers.BatchNormalization())
+            
+            if (model_config["DROPOUT_RATE"] > 0.0):
+                model.add(keras.layers.Dropout(model_config["DROPOUT_RATE"]))
+
+            model.add(
+                keras.layers.Dense(
+                    model_config["HIDDEN_NODES"][layer],
+                    name="Dense-Layer-" + str(layer),
+                    kernel_initializer = model_config["WEIGHTS_INITALIZER"],
+                    bias_initializer = model_config["BIAS_INITIALIZER"],
+                    kernel_regularizer = model_config["REGULARIZER"],
+                    activation = model_config["HIDDEN_ACTIVATION"],
+                )
+            )
+
+        model.add(
+            keras.layers.Dense(
+                model_config["OUTPUT_NODES"],
+                name="Output-layer",
+                activation=model_config["OUTPUT_ACTIVATION"],
+                )
+        )
+
+        optimizer = get_optimizer(
+            model_config["OPTIMIZER"],
+            model_config["LEARNING_RATE"],
+        )
+
+        model.compile(
+            loss=model_config["LOSS_FUNCTION"],
+            optimizer=optimizer,
+            metrics=model_config["METRICS"],
+        )
+
+        print("\n------------------------------------------")
+        print(model.summary())
+
+        X_train, X_val, Y_train, Y_val = train_test_split(
+            X, 
+            Y,
+            stratify=Y,
+            test_size=model_config["VALIDATION_SPLIT"]
+        )
+
+        history = model.fit(
+            X_train,
+            Y_train,
+            batch_size=model_config["BATCH_SIZE"],
+            epochs=model_config["EPOCHS"],
+            verbose=model_config["VERBOSE"],
+            validation_data=(X_val, Y_val),
+        )
+
+        return history
+
+def plot_graph(accuracy_measures, title):
+
+    plt.figure(figsize=(15,8))
+    
+    for experiment in accuracy_measures.keys():
+        plt.plot(accuracy_measures[experiment], label=experiment, linewidth=3)
+
+    plt.title(title)
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+    plt.legend()
+
+    plot_path = title + ".png"
+    print(f"Saving plot to {plot_path}")
+    plt.savefig(plot_path)
 
 if __name__ == "__main__":
 
+    # initialize the measures dict that stores training histories
     accuracy_measures = {}
 
     for batch_size in range(16, 128, 16):
 
         # load config using defaults
         model_config = base_model_config()
+
+        # get and process data
+        X, Y = get_data()
+
+        model_config["EPOCHS"] = 20
+        model_config["BATCH_SIZE"] = batch_size
+        print(f"model_config: {model_config}")
+
+        model_name = "Epochs-20-Batch-Size-" + str(batch_size)
+        
+        print(f"Creating and running a model '{model_name}")
+        history = create_and_run_model(
+            model_config,
+            X,
+            Y,
+            model_name,
+        )
+
+        accuracy_measures[model_name] = history.history["accuracy"]
+
+    plot_graph(accuracy_measures, "Compare Batch Size and Epoch")
