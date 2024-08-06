@@ -3,10 +3,10 @@
 
 ## Setup
 
-- Using PIP since torchtyping must be installed with pip
+- Using PIP since torchtyping must be installed with pip. (NOTE: Version last updated for course Advanced AI Transformers for Computer Vison)
 
 ```bash
-conda create -n pytorch-stable-pip python
+conda create -n pytorch-stable-pip python==3.10
 ```
 
 - Activate enviroment
