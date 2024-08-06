@@ -1,6 +1,29 @@
 # Advanced AI Transformers for Computer Vision
 
-## Google Colab Requirements List
+## Setup
+
+- Install wget if necessary
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/horus/.zprofile
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+brew install wget
+```
+
+- Download data
+
+```bash
+mkdir data
+cd data
+wget https://github.com/jonfernandes/flowers-dataset/raw/main/flower_photos.tgz
+tar -xvf flower_photos.tgz
+```
+
+
+## References 
+
+### Google Colab Requirements List
 
 ```text
 !pip list
