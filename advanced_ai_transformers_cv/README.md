@@ -11,7 +11,7 @@
 brew install wget
 ```
 
-- Download data
+- Download data (NOTE: May not be necessary if using download data script.)
 
 ```bash
 mkdir data
