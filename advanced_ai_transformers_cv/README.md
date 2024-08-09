@@ -20,6 +20,17 @@ wget https://github.com/jonfernandes/flowers-dataset/raw/main/flower_photos.tgz
 tar -xvf flower_photos.tgz
 ```
 
+## Troubleshooting
+
+###
+
+- Issue with fsspec package. Use the following versions to resolve.
+
+```sh
+datasets==2.14.6
+...
+huggingface_hub==0.14
+```
 
 ## References 
 

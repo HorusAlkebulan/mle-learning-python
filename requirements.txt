@@ -1,10 +1,10 @@
 # pip install -r requirements.txt
 # pip install transformers==4.24.0 datasets==2.7.1 evaluate==0.3.0 gradio==3.12.0 huggingface_hub==0.11.1
 black
-datasets==2.7
+datasets==2.14.6
 evaluate==0.3
 gradio==3.12
-huggingface_hub==0.11
+huggingface_hub==0.14
 keras==3.4
 matplotlib==3.7
 notebook==6.5
