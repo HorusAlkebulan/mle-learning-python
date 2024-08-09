@@ -16,7 +16,9 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device("cpu")
 
-print(f"Loading AutoModelForImageClassification pretrained as '{model_id}' to device '{device}'")
+print(
+    f"Loading AutoModelForImageClassification pretrained as '{model_id}' to device '{device}'"
+)
 model = AutoModelForImageClassification.from_pretrained(model_id).to(device)
 model.eval()
 
@@ -35,7 +37,7 @@ ds_val: Dataset = load_from_disk(ds_val_path)
 ds_test: Dataset = load_from_disk(ds_test_path)
 
 sample_image_id = 3
-sample_image: JpegImageFile = ds_train[sample_image_id]['image']
+sample_image: JpegImageFile = ds_train[sample_image_id]["image"]
 sample_image_path = os.path.join(PROJECT_ROOT, f"sample_image_{sample_image_id}.png")
 print(f"Saving sample image as {sample_image_path}")
 sample_image.save(sample_image_path)
@@ -49,7 +51,9 @@ train_image_t = torch.tensor(train_image_batch_feature["pixel_values"]).to(devic
 print(f"train_image_t: {train_image_t}")
 output_t = model(**train_image_batch_feature)
 print(f"output_t: {output_t}")
-print(f"output_t.logits: {type(output_t.logits)} {output_t.logits.shape} {output_t.logits}")
+print(
+    f"output_t.logits: {type(output_t.logits)} {output_t.logits.shape} {output_t.logits}"
+)
 output_max = torch.argmax(output_t.logits, dim=1)
 print(f"output_max: {output_max}")
 output_int = output_max.item()

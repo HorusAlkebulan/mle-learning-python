@@ -15,10 +15,6 @@ elif torch.backends.mps.is_available():
 else:
     device = torch.device("cpu")
 
-print("Loading ViTransformer Model and Feature Extractor")
-model = AutoModelForImageClassification.from_pretrained(MODEL_ID).to(device)
-model.eval()
-feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
 
 ds_train_path = os.path.join(PROJECT_ROOT, "data/ds_train.ds")
 print(f"Loading training set: {ds_train_path}")
@@ -27,11 +23,20 @@ ds_train = load_from_disk(ds_train_path)
 labels = ds_train.features["label"].names
 print(f"labels: {labels}\n{type(labels)}")
 
-id2label = {
-    key: value for key, value in enumerate(labels)
-}
-label2id = {
-    value: key for key, value in enumerate(labels)
-}
+id2label = {key: value for key, value in enumerate(labels)}
+label2id = {value: key for key, value in enumerate(labels)}
 print(f"id2label: {id2label}")
 print(f"label2id: {label2id}")
+
+print("Loading ViTransformer Model (for transfer learning) and Feature Extractor")
+model = AutoModelForImageClassification.from_pretrained(
+    MODEL_ID,
+    num_labels=len(labels),
+    id2label=id2label,
+    label2id=label2id,
+    ignore_mismatched_sizes=True,
+)
+model.to(device)
+model.eval()
+
+print(f"model loaded: {model}")
