@@ -7,6 +7,8 @@ import os
 from huggingface_hub import login
 from torch.utils.data import DataLoader
 import torch
+import evaluate
+import numpy as np
 
 BATCH_SIZE = 32
 METRIC_ACCURACY = "accuracy"
@@ -37,19 +39,6 @@ if __name__ == "__main__":
     logging_path = os.path.join(
         PROJECT_ROOT,
         LOGGING_DIR,
-    )
-    args = TrainingArguments(
-        FINE_TUNED_MODEL_NAME,
-        evaluation_strategy="steps",
-        learning_rate=5e-5,
-        per_device_train_batch_size=BATCH_SIZE,
-        per_device_eval_batch_size=BATCH_SIZE,
-        num_train_epochs=3,
-        load_best_model_at_end=True,
-        metric_for_best_model=METRIC_ACCURACY,
-        remove_unused_columns=False,
-        logging_dir=logging_path,
-        push_to_hub=True
     )
 
     print("Logging into huggingface (NOTE: This requires a huggingface WRITE token type)...")
@@ -102,6 +91,26 @@ if __name__ == "__main__":
     print(f"model loaded: {model}")
 
     feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
+    if device == torch.device("mps"):
+        print(f"MPS device found for training")
+        use_mps_device = True
+    else:
+        use_mps_device = False
+
+    args = TrainingArguments(
+        FINE_TUNED_MODEL_NAME,
+        evaluation_strategy="steps",
+        learning_rate=5e-5,
+        per_device_train_batch_size=BATCH_SIZE,
+        per_device_eval_batch_size=BATCH_SIZE,
+        num_train_epochs=1,
+        load_best_model_at_end=True,
+        metric_for_best_model=METRIC_ACCURACY,
+        remove_unused_columns=False,
+        logging_dir=logging_path,
+        push_to_hub=False,
+        use_mps_device=use_mps_device
+    )
     trainer = Trainer(
         model=model,
         args=args,
@@ -111,4 +120,59 @@ if __name__ == "__main__":
         data_collator=collate_fn,
     )
 
-    print(f"trainer loaded: {trainer}")
+    print(f"trainer loaded: {trainer}, running quick training test...")
+    trainer.train()
+
+    print("Predicion test using test data...")
+    result = trainer.predict(transformed_ds_test)
+
+    print(f"result: {result}")
+
+    print("Setting up for full training run...")
+    metric = evaluate.load(METRIC_ACCURACY)
+
+    def compute_metrics_fn(batch):
+        return metric.compute(
+            references=batch.label_ids,
+            predictions=np.argmax(batch.predictions, axis=1)
+        )
+    
+    args = TrainingArguments(
+        FINE_TUNED_MODEL_NAME,
+        evaluation_strategy="steps",
+        learning_rate=5e-5,
+        per_device_train_batch_size=BATCH_SIZE,
+        per_device_eval_batch_size=BATCH_SIZE,
+        num_train_epochs=3,
+        load_best_model_at_end=True,
+        metric_for_best_model=METRIC_ACCURACY,
+        remove_unused_columns=False,
+        logging_dir=logging_path,
+        push_to_hub=True,
+        use_mps_device=use_mps_device,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=args,
+        train_dataset=transformed_ds_train,
+        eval_dataset=transformed_ds_val,
+        tokenizer=feature_extractor,
+        data_collator=collate_fn,
+        compute_metrics=compute_metrics_fn,
+    )
+
+    print(f"trainer loaded: {trainer}, running full training...")
+    trainer.train()
+    
+    print("Saving trained model")
+    trainer.save_model()
+
+    print("Run evaluation using training data")
+    trainer.evaluate(transformed_ds_train)
+
+    print("Run evaluation using validation data")
+    trainer.evaluate(transformed_ds_val)
+
+    print("Run evalution using test data")
+    trainer.evaluate(transformed_ds_test)

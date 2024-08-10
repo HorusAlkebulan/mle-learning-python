@@ -168,3 +168,4 @@ pytorch_deep_learning/test
 pytorch_deep_learning/*.png
 *.pt
 data/
+advanced_ai_transformers_cv/logs/

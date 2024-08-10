@@ -55,7 +55,7 @@ def get_transformed_datasets(PROJECT_ROOT, MODEL_ID, PIXEL_VALUES_KEY, IMAGE_KEY
     validation_transform = Compose(
         [
             Resize(size_feature_value),
-            CenterCrop(feature_extractor.size),
+            CenterCrop(size_feature_value),
             ToTensor(),
             normalize,
         ]
