@@ -1,0 +1,23 @@
+# requirements_tensorrt.txt
+# NOTE: Currently set for python==3.10
+black==24.8
+datasets==2.14.6
+evaluate==0.3
+gradio==3.12
+huggingface_hub==0.14
+keras
+matplotlib==3.7
+notebook==6.5
+numpy==1.26
+pandas==2.1
+pytest==7.4
+seaborn==0.13
+tensorflow[and-cuda]
+tensorrt
+tf-keras
+torch-tensorrt
+torch
+# torchtyping==0.1.5
+torchvision
+transformers==4.24
+wordcloud==1.9.3
