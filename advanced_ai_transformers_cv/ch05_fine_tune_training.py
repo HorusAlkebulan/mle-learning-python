@@ -186,10 +186,8 @@ if __name__ == "__main__":
 
     validation_transform = Compose(
         [
-            # Resize(224),
-            # CenterCrop(size_feature_value),
-            RandomResizedCrop(size_feature_value),
-            RandomHorizontalFlip(),
+            Resize(size_feature_value),
+            CenterCrop(size_feature_value),
             ToTensor(),
             normalize,
         ]
@@ -213,7 +211,7 @@ if __name__ == "__main__":
         images[PIXEL_VALUES_KEY] = [
             validation_transform(image.convert("RGB")) for image in images[IMAGE_KEY]
         ]
-        
+        return images
 
     print(f"Transforming the datasets")
     transformed_ds = ds.with_transform(train_transform_images)
