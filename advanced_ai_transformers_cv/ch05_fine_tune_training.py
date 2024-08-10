@@ -21,7 +21,6 @@ from transformers import (
     TrainingArguments,
     Trainer,
     AutoModelForImageClassification,
-    AutoFeatureExtractor,
     ViTImageProcessor
 )
 from datasets import Dataset, load_from_disk, load_dataset
@@ -52,22 +51,6 @@ def get_device():
 
 
 device = get_device()
-
-
-# def get_labels_and_mapping(PROJECT_ROOT):
-#     ds_train_path = os.path.join(PROJECT_ROOT, "data/ds_train.ds")
-#     print(f"Loading training set: {ds_train_path}")
-#     ds_train = load_from_disk(ds_train_path)
-
-#     labels = ds_train.features["label"].names
-#     print(f"labels: {labels}\n{type(labels)}")
-
-#     id2label = {key: value for key, value in enumerate(labels)}
-#     label2id = {value: key for key, value in enumerate(labels)}
-#     print(f"id2label: {id2label}")
-#     print(f"label2id: {label2id}")
-#     return labels, id2label, label2id
-
 
 def get_huggingface_write_token() -> str:
     if "HUGGINGFACE_WRITE" in os.environ.keys():
@@ -135,10 +118,6 @@ if __name__ == "__main__":
 
     ds.update(ds_train_test)
     print(f"after creating test -> ds: {ds}")
-
-    # data will land in the cache: /Users/Horus/.cache/huggingface/datasets/imagefolder/default-062daa9e8cf14967/0.0.0/37fbb85cc714a338bea574ac6c7d0b5be5aff46c1862c1989b20e0771199e93f/dataset_info.json
-    labels = ds["train"].features["label"].names
-    print(f"Labels in the data: {labels}")
 
     id2label = {key: value for key, value in enumerate(labels)}
     label2id = {value: key for key, value in enumerate(labels)}
