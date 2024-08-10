@@ -39,7 +39,7 @@ def get_transformed_datasets(PROJECT_ROOT, MODEL_ID, PIXEL_VALUES_KEY, IMAGE_KEY
         std=feature_extractor.image_std,
     )
 
-    size_feature_value = feature_extractor.size
+    size_feature_value = feature_extractor.size['height']
     print(f"feature_extractor.size: {size_feature_value}")
 
     # setting up transform chains for train and validation

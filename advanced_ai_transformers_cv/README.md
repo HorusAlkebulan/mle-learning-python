@@ -2,6 +2,7 @@
 
 ## Setup
 
+
 - Install wget if necessary
 
 ```bash
@@ -9,6 +10,13 @@
 (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/horus/.zprofile
     eval "$(/opt/homebrew/bin/brew shellenv)"
 brew install wget
+```
+
+- Install Git LFS
+
+```sh
+brew install git-lfs
+git lfs install
 ```
 
 - Download data (NOTE: May not be necessary if using download data script.)
