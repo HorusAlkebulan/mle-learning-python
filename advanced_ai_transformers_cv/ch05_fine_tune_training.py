@@ -1,21 +1,5 @@
 # ch05_fine_tune_training.py
 
-from transformers import (
-    TrainingArguments,
-    Trainer,
-    AutoModelForImageClassification,
-    AutoFeatureExtractor,
-)
-# from ch03_defining_a_model import get_device, get_labels_and_mapping, MODEL_ID
-# from ch04_preprocessing_images import (
-#     IMAGE_KEY,
-#     LABEL_KEY,
-#     LABELS_KEY,
-#     PIXEL_VALUES_KEY,
-#     PROJECT_ROOT,
-#     get_transformed_datasets,
-# )
-
 import os
 from huggingface_hub import login
 from torch.utils.data import DataLoader
@@ -31,13 +15,17 @@ from torchvision.transforms import (
     Resize,
     CenterCrop,
 )
-import torch
-import os
 from transformers import (
+    AutoModelForImageClassification,
+    AutoFeatureExtractor,
+    TrainingArguments,
+    Trainer,
     AutoModelForImageClassification,
     AutoFeatureExtractor,
 )
 from datasets import Dataset, load_from_disk, load_dataset
+from PIL.JpegImagePlugin import JpegImageFile
+import matplotlib.pyplot as plt 
 
 PROJECT_ROOT = os.path.dirname(__file__)
 MODEL_ID = "google/vit-base-patch16-224"
@@ -51,6 +39,7 @@ FINE_TUNED_MODEL_NAME = "vit-base-patch16-224-finetuned-flower"
 LOGGING_DIR = "logs"
 TRAINING_BATCH_SIZE = 4
 
+
 def get_device():
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -60,29 +49,30 @@ def get_device():
         device = torch.device("cpu")
     return device
 
+
 device = get_device()
 
-def get_labels_and_mapping(PROJECT_ROOT):
-    ds_train_path = os.path.join(PROJECT_ROOT, "data/ds_train.ds")
-    print(f"Loading training set: {ds_train_path}")
-    ds_train = load_from_disk(ds_train_path)
 
-    labels = ds_train.features["label"].names
-    print(f"labels: {labels}\n{type(labels)}")
+# def get_labels_and_mapping(PROJECT_ROOT):
+#     ds_train_path = os.path.join(PROJECT_ROOT, "data/ds_train.ds")
+#     print(f"Loading training set: {ds_train_path}")
+#     ds_train = load_from_disk(ds_train_path)
 
-    id2label = {key: value for key, value in enumerate(labels)}
-    label2id = {value: key for key, value in enumerate(labels)}
-    print(f"id2label: {id2label}")
-    print(f"label2id: {label2id}")
-    return labels,id2label,label2id
+#     labels = ds_train.features["label"].names
+#     print(f"labels: {labels}\n{type(labels)}")
+
+#     id2label = {key: value for key, value in enumerate(labels)}
+#     label2id = {value: key for key, value in enumerate(labels)}
+#     print(f"id2label: {id2label}")
+#     print(f"label2id: {label2id}")
+#     return labels, id2label, label2id
+
 
 def get_huggingface_write_token() -> str:
     if "HUGGINGFACE_WRITE" in os.environ.keys():
         return os.environ["HUGGINGFACE_WRITE"]
     else:
         raise RuntimeError("Please set HUGGINGFACE_WRITE in environment variables.")
-
-
 
 
 if __name__ == "__main__":
@@ -99,6 +89,77 @@ if __name__ == "__main__":
         token=get_huggingface_write_token(),
         add_to_git_credential=True,
     )
+
+
+    # print(f"Loading datasets")
+    # ds_train_path = os.path.join(PROJECT_ROOT, "data/ds_train.ds")
+    # ds_val_path = os.path.join(PROJECT_ROOT, "data/ds_val.ds")
+    # ds_test_path = os.path.join(PROJECT_ROOT, "data/ds_test.ds")
+
+    # print(f"Loading datasets from {ds_train_path}, {ds_val_path}, and {ds_test_path}")
+    # ds_train: Dataset = load_from_disk(ds_train_path)
+    # ds_val: Dataset = load_from_disk(ds_val_path)
+    # ds_test: Dataset = load_from_disk(ds_test_path)
+
+    data_files = (
+        "https://github.com/jonfernandes/flowers-dataset/raw/main/flower_photos.tgz"
+    )
+    local_path = "advanced_ai_transformers_cv/data/downloaded"  # /flower_photos.tgz"
+    # root_dir = "/Users/Horus/git-projects/horusalkebulan/mle-learning-python"
+    # local_path = os.path.join(root_dir, local_path)
+    local_path = "imagefolder"
+
+    print(f"Loading (or downloading) dataset using {local_path} from URL {data_files}")
+    ds = load_dataset(local_path, data_files=data_files)
+    print(f"ds: {ds}")
+
+    # data will land in the cache: /Users/Horus/.cache/huggingface/datasets/imagefolder/default-062daa9e8cf14967/0.0.0/37fbb85cc714a338bea574ac6c7d0b5be5aff46c1862c1989b20e0771199e93f/dataset_info.json
+    labels = ds["train"].features["label"].names
+    print(f"Labels in the data: {labels}")
+
+    # splitting the data
+    ds_train_validation = ds["train"].train_test_split(
+        test_size=0.1, seed=1, shuffle=True
+    )
+    print(f"ds_train_validation: {ds_train_validation}")
+
+    ds_train_validation["validation"] = ds_train_validation.pop("test")
+    print(f"after rename test to validation -> ds_train_validation: {ds_train_validation}")
+
+    ds.update(ds_train_validation)
+    print(f"after rename and update -> ds: {ds}")
+
+    ds_train_test = ds["train"].train_test_split(test_size=0.1, seed=1, shuffle=True)
+    print(f"ds_train_test: {ds_train_test}")
+
+    ds.update(ds_train_test)
+    print(f"after creating test -> ds: {ds}")
+
+    # data will land in the cache: /Users/Horus/.cache/huggingface/datasets/imagefolder/default-062daa9e8cf14967/0.0.0/37fbb85cc714a338bea574ac6c7d0b5be5aff46c1862c1989b20e0771199e93f/dataset_info.json
+    labels = ds["train"].features["label"].names
+    print(f"Labels in the data: {labels}")
+
+    id2label = {key: value for key, value in enumerate(labels)}
+    label2id = {value: key for key, value in enumerate(labels)}
+    print(f"id2label: {id2label}")
+    print(f"label2id: {label2id}")
+
+    # ds_train: Dataset = ds["train"]
+    # ds_val: Dataset = ds["validation"]
+    # ds_test: Dataset = ds["test"]
+
+    print(
+        f"Loading ViTransformer Model (for transfer learning) and Feature Extractor to {device}"
+    )
+    model = AutoModelForImageClassification.from_pretrained(
+        MODEL_ID,
+        num_labels=len(labels),
+        id2label=id2label,
+        label2id=label2id,
+        ignore_mismatched_sizes=True,
+    )
+    model.to(device)
+    print(f"model loaded: {model}")
 
     # transformed_ds_train, transformed_ds_val, transformed_ds_test = get_transformed_datasets(PROJECT_ROOT, MODEL_ID, PIXEL_VALUES_KEY, IMAGE_KEY)
     feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
@@ -148,123 +209,114 @@ if __name__ == "__main__":
             validation_transform(image.convert("RGB")) for image in images[IMAGE_KEY]
         ]
 
-    # print(f"Loading datasets")
-    # ds_train_path = os.path.join(PROJECT_ROOT, "data/ds_train.ds")
-    # ds_val_path = os.path.join(PROJECT_ROOT, "data/ds_val.ds")
-    # ds_test_path = os.path.join(PROJECT_ROOT, "data/ds_test.ds")
-
-    # print(f"Loading datasets from {ds_train_path}, {ds_val_path}, and {ds_test_path}")
-    # ds_train: Dataset = load_from_disk(ds_train_path)
-    # ds_val: Dataset = load_from_disk(ds_val_path)
-    # ds_test: Dataset = load_from_disk(ds_test_path)
-
-    data_files = "https://github.com/jonfernandes/flowers-dataset/raw/main/flower_photos.tgz"
-    local_path = "advanced_ai_transformers_cv/data/downloaded" # /flower_photos.tgz"
-    # root_dir = "/Users/Horus/git-projects/horusalkebulan/mle-learning-python"
-    # local_path = os.path.join(root_dir, local_path)
-    local_path = "imagefolder"
-
-    print(f"Loading (or downloading) dataset using {local_path} from URL {data_files}")
-    ds = load_dataset(local_path, data_files=data_files)
-
-    # data will land in the cache: /Users/Horus/.cache/huggingface/datasets/imagefolder/default-062daa9e8cf14967/0.0.0/37fbb85cc714a338bea574ac6c7d0b5be5aff46c1862c1989b20e0771199e93f/dataset_info.json
-    labels = ds['train'].features['label'].names
-    print(f"Labels in the data: {labels}")
-
-    # splitting the data
-    ds_train_validation = ds["train"].train_test_split(
-        test_size=0.1,
-        seed=1,
-        shuffle=True
-    )
-    print(f"ds_train_validation: {ds_train_validation}")
-
-    ds_train_validation["validation"] = ds_train_validation.pop("test")
-    print(f"ds_train_validation: {ds_train_validation}")
-
-    ds.update(ds_train_validation)
-    print(f"ds: {ds}")
-
-    ds_train_test = ds["train"].train_test_split(
-        test_size=0.1,
-        seed=1,
-        shuffle=True
-    )
-    print(f"ds_train_test: {ds_train_test}")
-
-    ds.update(ds_train_test)
-    print(f"ds: {ds}")
-
-    ds_train: Dataset = ds["train"]
-    ds_val: Dataset = ds["validation"]
-    ds_test: Dataset = ds["test"]
 
     print(f"Transforming the datasets")
-    transformed_ds_train = ds_train.with_transform(train_transform_images)
-    transformed_ds_val = ds_val.with_transform(validation_transform_images)
-    transformed_ds_test = ds_test.with_transform(validation_transform_images)
-
-    print(f"transformed_ds_train: {transformed_ds_train}")
-    print(f"transformed_ds_val: {transformed_ds_val}")
-    print(f"transformed_ds_test: {transformed_ds_test}")
-
-    train_rows = transformed_ds_train.num_rows
-    val_rows = transformed_ds_val.num_rows
-    test_rows = transformed_ds_test.num_rows
+    transformed_ds = ds.with_transform(train_transform_images)
+    transformed_ds["train"] = ds["train"].with_transform(train_transform_images)
+    transformed_ds["validation"] = ds["validation"].with_transform(train_transform_images)
+    transformed_ds["test"] = ds["test"].with_transform(train_transform_images)
+    # transformed_ds["validation"] = ds["validation"].with_transform(validation_transform_images)
+    # transformed_ds["test"] = ds["test"].with_transform(validation_transform_images)
+    # transformed_ds_train = ds_train.with_transform(train_transform_images)
+    # transformed_ds_val = ds_val.with_transform(validation_transform_images)
+    # transformed_ds_test = ds_test.with_transform(validation_transform_images)
+    # transformed_ds_train = transformed_ds["train"]
+    # transformed_ds_val = transformed_ds["validation"]
+    # transformed_ds_test = transformed_ds["test"]
+    # print(f"transformed_ds_train: {transformed_ds_train}")
+    # print(f"transformed_ds_val: {transformed_ds_val}")
+    # print(f"transformed_ds_test: {transformed_ds_test}")
+    train_rows = transformed_ds["train"].num_rows
+    val_rows = transformed_ds["validation"].num_rows
+    test_rows = transformed_ds["test"].num_rows
     total_rows = train_rows + val_rows + test_rows
 
     print(
         f"train/val/test split: {train_rows/total_rows:0.2f}/{val_rows/total_rows:0.2f}/{test_rows/total_rows:0.2f}"
     )
 
+    # view sample images
+    for sample_image_id in range(3, 5):
+        sample_image: JpegImageFile = ds["train"][sample_image_id][IMAGE_KEY]
+        sample_image_path = os.path.join(PROJECT_ROOT, f"original_training_image_{sample_image_id}.jpg")
+        print(f"Saving original sample training image: {sample_image_path}")
+        sample_image.save(sample_image_path)
+
+        transformed_sample_image = train_transform(sample_image).permute(1, 2, 0) #.numpy()
+        print(f"transformed_sample_image: {transformed_sample_image}\n{type(transformed_sample_image)}\n{transformed_sample_image.shape}")
+        sample_image_path = os.path.join(PROJECT_ROOT, f"train_transformed_training_image_{sample_image_id}.jpg")
+        print(f"Saving training transformed sample training image {type(transformed_sample_image)} {transformed_sample_image.shape}: {sample_image_path}")
+        plt.imshow(transformed_sample_image)
+        plt.title(sample_image_path)
+        plt.show()
+        # plt.imsave(sample_image_path, transformed_sample_image)
+
+    for sample_image_id in range(3, 5):
+        sample_image: JpegImageFile = ds["validation"][sample_image_id][IMAGE_KEY]
+        sample_image_path = os.path.join(PROJECT_ROOT, f"original_validation_image_{sample_image_id}.jpg")
+        print(f"Saving original sample validation image: {sample_image_path}")
+        sample_image.save(sample_image_path)
+        transformed_sample_image = validation_transform(sample_image).permute(1, 2, 0) #.numpy()
+        sample_image_path = os.path.join(PROJECT_ROOT, f"validation_transformed_validation_image_{sample_image_id}.jpg")
+        print(f"Saving validation transformed sample validation image {type(transformed_sample_image)} {transformed_sample_image.shape}: {sample_image_path}")
+        # plt.imsave(sample_image_path, transformed_sample_image)
+        plt.imshow(transformed_sample_image)
+        plt.title(sample_image_path)
+        plt.show()
+
+    for sample_image_id in range(3, 5):
+        sample_image: JpegImageFile = ds["test"][sample_image_id][IMAGE_KEY]
+        sample_image_path = os.path.join(PROJECT_ROOT, f"original_test_image_{sample_image_id}.jpg")
+        print(f"Saving original sample test image: {sample_image_path}")
+        sample_image.save(sample_image_path)
+        transformed_sample_image = validation_transform(sample_image).permute(1, 2, 0)# .numpy()
+        sample_image_path = os.path.join(PROJECT_ROOT, f"validation_transformed_test_image_{sample_image_id}.jpg")
+        print(f"Saving validation transformed sample validation image {type(transformed_sample_image)} {transformed_sample_image.shape}: {sample_image_path}")
+        # plt.imsave(sample_image_path, transformed_sample_image)
+        plt.imshow(transformed_sample_image)
+        plt.title(sample_image_path)
+        plt.show()
+
+
     # load up data for training, validation, and evaluation
     train_dataloader = DataLoader(
-        transformed_ds_train,
+        transformed_ds["train"],
         batch_size=TRAINING_BATCH_SIZE,
         collate_fn=collate_fn,
         shuffle=True,
     )
     print(f"train_dataloader: {train_dataloader}")
     validation_dataloader = DataLoader(
-        transformed_ds_val,
+        transformed_ds["validation"],
         batch_size=TRAINING_BATCH_SIZE,
         collate_fn=collate_fn,
         shuffle=False,
     )
+    print(f"validation_dataloader: {validation_dataloader}")
     test_dataloader = DataLoader(
-        transformed_ds_test,
+        transformed_ds["test"],
         batch_size=TRAINING_BATCH_SIZE,
         collate_fn=collate_fn,
         shuffle=False,
     )
+    print(f"test_dataloader: {test_dataloader}")
 
     # view batch
-    batch_train = next(iter(train_dataloader))
-    for key, value in batch_train.items():
-        print(f"train_dataloader: key={key}, value={value.shape}")
-    batch_val = next(iter(validation_dataloader))
-    for key, value in batch_val.items():
-        print(f"validation_dataloader: key={key}, value={value.shape}")
+    # batch_train = next(iter(train_dataloader))
+    # for key, value in batch_train.items():
+    #     print(f"train_dataloader: key={key}, value={value.shape}")
+    # batch_val = next(iter(validation_dataloader))
+    # for key, value in batch_val.items():
+    #     print(f"validation_dataloader: key={key}, value={value.shape}")
     batch_test = next(iter(test_dataloader))
     for key, value in batch_test.items():
         print(f"test_dataloader: key={key}, value={value.shape}")
 
-    labels, id2label, label2id = get_labels_and_mapping(PROJECT_ROOT)
+    # labels, id2label, label2id = get_labels_and_mapping(PROJECT_ROOT)
 
-    device = get_device()
+    # device = get_device()
 
-    print(
-        f"Loading ViTransformer Model (for transfer learning) and Feature Extractor to {device}"
-    )
-    model = AutoModelForImageClassification.from_pretrained(
-        MODEL_ID,
-        num_labels=len(labels),
-        id2label=id2label,
-        label2id=label2id,
-        ignore_mismatched_sizes=True,
-    )
-    model.to(device)
-    print(f"model loaded: {model}")
+
 
     feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
     if device == torch.device("mps"):
