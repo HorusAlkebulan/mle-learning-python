@@ -2,7 +2,7 @@
 
 import os
 import torch
-from transformers import AutoModelForImageClassification, AutoFeatureExtractor
+from transformers import AutoModelForImageClassification, AutoFeatureExtractor, pipeline
 from datasets import load_dataset
 
 TEST_DS_KEY = "test"
@@ -13,6 +13,7 @@ IMAGE_KEY = "image"
 LABEL_KEY = "label"
 LABELS_KEY = "labels"
 FINE_TUNED_MODEL_NAME = "vit-base-patch16-224-finetuned-flower"
+
 
 def get_device():
     if torch.cuda.is_available():
@@ -27,17 +28,22 @@ def get_device():
 def classify_image(image):
 
     device = get_device()
-    model = AutoModelForImageClassification.from_pretrained(FINE_TUNED_MODEL_NAME).to(device)
+    model = AutoModelForImageClassification.from_pretrained(FINE_TUNED_MODEL_NAME).to(
+        device
+    )
     feature_extractor = AutoFeatureExtractor.from_pretrained(FINE_TUNED_MODEL_NAME)
     input = feature_extractor(image, return_tensors="pt").to(device)
     output = model(**input)
     prediction = torch.argmax(output.logits, dim=-1).item()
     return model.config.id2label[prediction]
 
+
 def classify_image_confidence(image):
 
     device = get_device()
-    model = AutoModelForImageClassification.from_pretrained(FINE_TUNED_MODEL_NAME).to(device)
+    model = AutoModelForImageClassification.from_pretrained(FINE_TUNED_MODEL_NAME).to(
+        device
+    )
     feature_extractor = AutoFeatureExtractor.from_pretrained(FINE_TUNED_MODEL_NAME)
     input = feature_extractor(image, return_tensors="pt").to(device)
     output = model(**input)
@@ -46,6 +52,20 @@ def classify_image_confidence(image):
     confidence = {label: float(prediction_np[i]) for i, label in enumerate(labels)}
     return confidence
 
+
+def classify_image_pipeline(image):
+
+    device = get_device()
+    feature_extractor = AutoFeatureExtractor.from_pretrained(FINE_TUNED_MODEL_NAME)
+    image_classifier = pipeline(
+        "image-classification",
+        model=FINE_TUNED_MODEL_NAME,
+        feature_extractor=feature_extractor,
+        framework="pt",
+        device=device,
+    )
+    prediction = image_classifier(image)
+    return prediction
 
 if __name__ == "__main__":
 
@@ -81,7 +101,6 @@ if __name__ == "__main__":
     print(f"Saving original sample training image: {sample_image_path}")
     test_image.save(sample_image_path)
 
-
     print(f"classify_image(test_image={test_image})")
     result = classify_image(test_image)
     print(f"result={result}")
@@ -90,3 +109,6 @@ if __name__ == "__main__":
     confidence = classify_image_confidence(test_image)
     print(f"confidence={confidence}")
 
+    print(f"classify_image_pipeline(test_image={test_image})")
+    pipeline_result = classify_image_pipeline(test_image)
+    print(f"pipeline_result={pipeline_result}")
