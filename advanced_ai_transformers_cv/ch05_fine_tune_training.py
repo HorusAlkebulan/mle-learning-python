@@ -22,6 +22,7 @@ from transformers import (
     Trainer,
     AutoModelForImageClassification,
     AutoFeatureExtractor,
+    ViTImageProcessor
 )
 from datasets import Dataset, load_from_disk, load_dataset
 from PIL.JpegImagePlugin import JpegImageFile
@@ -162,13 +163,15 @@ if __name__ == "__main__":
     print(f"model loaded: {model}")
 
     # transformed_ds_train, transformed_ds_val, transformed_ds_test = get_transformed_datasets(PROJECT_ROOT, MODEL_ID, PIXEL_VALUES_KEY, IMAGE_KEY)
-    feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
+    # feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
+    feature_extractor = ViTImageProcessor.from_pretrained(MODEL_ID)
     normalize = Normalize(
         mean=feature_extractor.image_mean,
         std=feature_extractor.image_std,
     )
 
-    size_feature_value = feature_extractor.size["height"]
+    size_feature_value = feature_extractor.size
+    size_feature_value = (feature_extractor.size["height"], feature_extractor.size["width"])
     print(f"feature_extractor.size: {size_feature_value}")
 
     # setting up transform chains for train and validation
@@ -183,8 +186,10 @@ if __name__ == "__main__":
 
     validation_transform = Compose(
         [
-            Resize(size_feature_value),
-            CenterCrop(size_feature_value),
+            # Resize(224),
+            # CenterCrop(size_feature_value),
+            RandomResizedCrop(size_feature_value),
+            RandomHorizontalFlip(),
             ToTensor(),
             normalize,
         ]
@@ -208,15 +213,15 @@ if __name__ == "__main__":
         images[PIXEL_VALUES_KEY] = [
             validation_transform(image.convert("RGB")) for image in images[IMAGE_KEY]
         ]
-
+        
 
     print(f"Transforming the datasets")
     transformed_ds = ds.with_transform(train_transform_images)
     transformed_ds["train"] = ds["train"].with_transform(train_transform_images)
-    transformed_ds["validation"] = ds["validation"].with_transform(train_transform_images)
-    transformed_ds["test"] = ds["test"].with_transform(train_transform_images)
-    # transformed_ds["validation"] = ds["validation"].with_transform(validation_transform_images)
-    # transformed_ds["test"] = ds["test"].with_transform(validation_transform_images)
+    # transformed_ds["validation"] = ds["validation"].with_transform(train_transform_images)
+    # transformed_ds["test"] = ds["test"].with_transform(train_transform_images)
+    transformed_ds["validation"] = ds["validation"].with_transform(validation_transform_images)
+    transformed_ds["test"] = ds["test"].with_transform(validation_transform_images)
     # transformed_ds_train = ds_train.with_transform(train_transform_images)
     # transformed_ds_val = ds_val.with_transform(validation_transform_images)
     # transformed_ds_test = ds_test.with_transform(validation_transform_images)
@@ -248,8 +253,7 @@ if __name__ == "__main__":
         print(f"Saving training transformed sample training image {type(transformed_sample_image)} {transformed_sample_image.shape}: {sample_image_path}")
         plt.imshow(transformed_sample_image)
         plt.title(sample_image_path)
-        plt.show()
-        # plt.imsave(sample_image_path, transformed_sample_image)
+        plt.savefig(sample_image_path)
 
     for sample_image_id in range(3, 5):
         sample_image: JpegImageFile = ds["validation"][sample_image_id][IMAGE_KEY]
@@ -262,7 +266,7 @@ if __name__ == "__main__":
         # plt.imsave(sample_image_path, transformed_sample_image)
         plt.imshow(transformed_sample_image)
         plt.title(sample_image_path)
-        plt.show()
+        plt.savefig(sample_image_path)
 
     for sample_image_id in range(3, 5):
         sample_image: JpegImageFile = ds["test"][sample_image_id][IMAGE_KEY]
@@ -275,8 +279,7 @@ if __name__ == "__main__":
         # plt.imsave(sample_image_path, transformed_sample_image)
         plt.imshow(transformed_sample_image)
         plt.title(sample_image_path)
-        plt.show()
-
+        plt.savefig(sample_image_path)
 
     # load up data for training, validation, and evaluation
     train_dataloader = DataLoader(
@@ -302,23 +305,16 @@ if __name__ == "__main__":
     print(f"test_dataloader: {test_dataloader}")
 
     # view batch
-    # batch_train = next(iter(train_dataloader))
-    # for key, value in batch_train.items():
-    #     print(f"train_dataloader: key={key}, value={value.shape}")
-    # batch_val = next(iter(validation_dataloader))
-    # for key, value in batch_val.items():
-    #     print(f"validation_dataloader: key={key}, value={value.shape}")
+    batch_train = next(iter(train_dataloader))
+    for key, value in batch_train.items():
+        print(f"train_dataloader: key={key}, value={value.shape}")
+    batch_val = next(iter(validation_dataloader))
+    for key, value in batch_val.items():
+        print(f"validation_dataloader: key={key}, value={value.shape}")
     batch_test = next(iter(test_dataloader))
     for key, value in batch_test.items():
         print(f"test_dataloader: key={key}, value={value.shape}")
 
-    # labels, id2label, label2id = get_labels_and_mapping(PROJECT_ROOT)
-
-    # device = get_device()
-
-
-
-    feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_ID)
     if device == torch.device("mps"):
         print(f"MPS device found for training")
         use_mps_device = True
@@ -342,8 +338,8 @@ if __name__ == "__main__":
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=transformed_ds_train,
-        eval_dataset=transformed_ds_val,
+        train_dataset=transformed_ds["train"],
+        eval_dataset=transformed_ds["validation"],
         tokenizer=feature_extractor,
         data_collator=collate_fn,
         # optimizers=(torch.optim.AdamW, torch.optim.lr_scheduler.LambdaLR),
@@ -353,7 +349,7 @@ if __name__ == "__main__":
     trainer.train()
 
     print("Predicion test using test data...")
-    result = trainer.predict(transformed_ds_test)
+    result = trainer.predict(transformed_ds["test"])
 
     print(f"result: {result}")
 
@@ -383,8 +379,8 @@ if __name__ == "__main__":
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=transformed_ds_train,
-        eval_dataset=transformed_ds_val,
+        train_dataset=transformed_ds["train"],
+        eval_dataset=transformed_ds["validation"],
         tokenizer=feature_extractor,
         data_collator=collate_fn,
         compute_metrics=compute_metrics_fn,
@@ -398,10 +394,10 @@ if __name__ == "__main__":
     trainer.save_model()
 
     print("Run evaluation using training data")
-    trainer.evaluate(transformed_ds_train)
+    trainer.evaluate(transformed_ds["train"])
 
     print("Run evaluation using validation data")
-    trainer.evaluate(transformed_ds_val)
+    trainer.evaluate(transformed_ds["validation"])
 
     print("Run evalution using test data")
-    trainer.evaluate(transformed_ds_test)
+    trainer.evaluate(transformed_ds["test"])
