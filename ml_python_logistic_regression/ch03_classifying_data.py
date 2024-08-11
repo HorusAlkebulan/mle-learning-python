@@ -18,32 +18,44 @@ if __name__ == "__main__":
     print(HR)
     print(f"describe:\n{loan_data_df.describe()}")
 
-    ax = sns.boxplot(
+    fig, axs = plt.subplots(nrows=2, ncols=2)
+    fig.set_size_inches(11, 8.5)
+    fig.subplots_adjust(hspace=0.25, wspace=0.25)
+
+    sns.boxplot(
         loan_data_df,
         x="Default",
-        y="Income"
+        y="Income",
+        ax=axs[0, 0],
     )
-    plt.title("Seaborn Box Plot")
-    # plt.show()
-    plot_path = os.path.join(PROJECT_ROOT, "boxplot_loan_default_income.png")
-    print(f"Saved plot to {plot_path}")
-    plt.savefig(plot_path)
-    
+    axs[0, 0].set_title("boxplot_loan_default_income")
 
-    ax = sns.boxplot(
+    # plot_path = os.path.join(PROJECT_ROOT, "boxplot_loan_default_income.png")
+    # print(f"Saved plot to {plot_path}")
+    # plt.savefig(plot_path)
+    
+    sns.boxplot(
         loan_data_df,
         x="Default",
         y="Loan Amount",
+        ax=axs[0, 1],
     )
-    plot_path = os.path.join(PROJECT_ROOT, "boxplot_loan_default_loan_amount.png")
-    print(f"Saved plot to {plot_path}")
-    plt.savefig(plot_path)
+    # plot_path = os.path.join(PROJECT_ROOT, "boxplot_loan_default_loan_amount.png")
+    # print(f"Saved plot to {plot_path}")
+    # plt.savefig(plot_path)
+    axs[0, 1].set_title("boxplot_loan_default_loan_amount")
 
-    ax = sns.scatterplot(
+    sns.scatterplot(
         x=loan_data_df["Income"],
         y=np.where(loan_data_df["Default"]=="No", 0, 1),
         s=150,
+        ax=axs[1, 0],
     )
-    plot_path = os.path.join(PROJECT_ROOT, "scatterplot_income_default_no.png")
-    print(f"Saved plot to {plot_path}")
+    axs[1, 0].set_title("scatterplot_income_default_no")
+
+    plot_filename = "ch03_classifying_data_plots.png"
+    plt.suptitle(plot_filename)
+
+    plot_path = os.path.join(PROJECT_ROOT, plot_filename)
+    print(f"Saving plot to {plot_path}")
     plt.savefig(plot_path)
