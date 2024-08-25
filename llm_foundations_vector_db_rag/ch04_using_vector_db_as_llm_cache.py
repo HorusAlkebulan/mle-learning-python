@@ -24,6 +24,7 @@ FIELD_PROMPT_TEXT = "prompt_text"
 FIELD_RESPONSE_TEXT = "response_text"
 HR = "-------------------------------------------------------------------------"
 OPENAI_EMBEDDING_SIZE = 1536
+# https://platform.openai.com/docs/deprecations
 OPENAI_LLM_MODEL = "gpt-3.5-turbo-instruct" # DEPRECATED: "text-davinci-003"
 OPENAI_KEY_ENV_NAME = "OPENAI_API_KEY"
 PROJECT_ROOT = os.path.dirname(__file__)
