@@ -169,3 +169,4 @@ pytorch_deep_learning/*.png
 *.pt
 data/
 advanced_ai_transformers_cv/logs/
+llm_foundations_vector_db_rag/volumes/
