@@ -11,6 +11,7 @@ from pymilvus import (
     Collection,
 )
 import os
+
 # NOTE: Deprecated --> from langchain.llms import OpenAI
 from langchain_community.llms import OpenAI
 
@@ -26,7 +27,10 @@ OPENAI_KEY_ENV_NAME = "OPENAI_API_KEY"
 PROJECT_ROOT = os.path.dirname(__file__)
 HR = "-------------------------------------------------------------------------"
 
-def delete_objects(collection, collection_name, connection_id, db_name):
+
+def delete_objects(
+    collection: Collection, collection_name: str, connection_id: str, db_name: str
+) -> None:
 
     print(HR)
     print("### 03.08. Deleting objects and entities")
@@ -34,14 +38,15 @@ def delete_objects(collection, collection_name, connection_id, db_name):
 
     q_delete = "course_id in [1002]"
     print(f"Running delete using query: {q_delete}")
-    delete_result = r_collection.delete(q_delete)
+    delete_result = collection.delete(q_delete)
     print(f"delete_result: {delete_result}")
 
     print(f"Dropping collection: {collection_name}")
     utility.drop_collection(collection_name, using=connection_id)
 
-    print(F"Dropping database: {db_name}")
+    print(f"Dropping database: {db_name}")
     db.drop_database(db_name=db_name, using=connection_id)
+
 
 if __name__ == "__main__":
 
@@ -190,9 +195,7 @@ if __name__ == "__main__":
         index_params = {
             "metric_type": "L2",
             "index_type": "IVF_FLAT",
-            "params": {
-                "nlist": 1024
-            }
+            "params": {"nlist": 1024},
         }
         r_collection.create_index(
             field_name="desc_embedding",
@@ -245,7 +248,9 @@ if __name__ == "__main__":
     search_string = "machine learning"
     search_embedding = embeddings_model.embed_query(search_string)
 
-    print(f"Running search using string '{search_string}' as embedding:\n{str(search_embedding)[:100]}...")
+    print(
+        f"Running search using string '{search_string}' as embedding:\n{str(search_embedding)[:100]}..."
+    )
     s_results = r_collection.search(
         data=[search_embedding],
         anns_field="desc_embedding",
@@ -263,7 +268,9 @@ if __name__ == "__main__":
     search_string = "best movies of the year"
     search_embedding = embeddings_model.embed_query(search_string)
 
-    print(f"Running search using string '{search_string}' as embedding:\n{str(search_embedding)[:100]}...")
+    print(
+        f"Running search using string '{search_string}' as embedding:\n{str(search_embedding)[:100]}..."
+    )
     s_results = r_collection.search(
         data=[search_embedding],
         anns_field="desc_embedding",
@@ -276,4 +283,3 @@ if __name__ == "__main__":
     print(f"Search results (type: {type(s_results[0])}):")
     for i in s_results[0]:
         print(f"- {i.id}\t{str(round(i.distance, 2))}\t{i.entity.get('title')}")
-
