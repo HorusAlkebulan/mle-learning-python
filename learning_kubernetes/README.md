@@ -33,3 +33,30 @@ kubectl get pods -A
 kubectl get services -A
 ```
 
+### Using Minikube Tunnel for Load Balancer Testing
+
+```sh
+minikube tunnel
+```
+
+## Basic Operations
+
+```sh
+kubectl get pods -n development -o wide
+kubectl tunnel
+minikube tunnel
+
+kubectl apply -f busybox.yaml
+kubectl get pods
+kubectl exec -it busybox-647b869f4d-s54zl -- /bin/sh
+kubectl get pods -A
+kubectl logs pod-info-deployment-5cdffc94c-jc86c -n development
+kubectl apply -f service.yaml
+kubectl get services -n development
+
+kubectl delete -f busybox.yaml
+kubectl delete -f deployment.yaml
+kubectl delete -f service.yaml
+kubectl delete -f namespace.yaml
+minikube delete
+```
